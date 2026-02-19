@@ -1,0 +1,29 @@
+name: Fetch News
+on:
+  schedule:
+    - cron: '0 * * * *'   # Every hour
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  run-fetcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: './backend/package-lock.json'
+          
+      - name: Install Backend Dependencies
+        run: npm ci
+        working-directory: ./backend
+        
+      - name: Run Fetcher Script
+        run: node index.js --run-now
+        working-directory: ./backend
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          HF_API_KEY: ${{ secrets.HF_API_KEY }}
