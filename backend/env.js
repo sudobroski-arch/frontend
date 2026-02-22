@@ -27,6 +27,8 @@ const allowedOrigins = parseCsv(process.env.ALLOWED_ORIGINS);
 const rateLimitWindowMs = parsePositiveInt(process.env.RATE_LIMIT_WINDOW_MS, 60_000);
 const rateLimitMaxRequests = parsePositiveInt(process.env.RATE_LIMIT_MAX_REQUESTS, 120);
 
+const geminiApiKey = process.env.GEMINI_API_KEY;
+
 if (isProduction && allowedOrigins.length === 0) {
     console.warn('[env] ALLOWED_ORIGINS is empty in production. CORS is currently open.');
 }
@@ -36,5 +38,6 @@ module.exports = {
     port,
     allowedOrigins,
     rateLimitWindowMs,
-    rateLimitMaxRequests
+    rateLimitMaxRequests,
+    geminiApiKey
 };
