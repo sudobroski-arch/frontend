@@ -1,41 +1,35 @@
-const axios = require('axios');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('./env');
 
-const HF_API_KEY = process.env.HF_API_KEY;
-const HF_MODEL = 'facebook/bart-large-cnn';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 async function summarize(text, maxLength = 250) {
     if (!text || text.length < 50) return text; // Too short to summarize
 
     try {
-        const response = await axios.post(
-            `https://api-inference.huggingface.co/models/${HF_MODEL}`,
-            {
-                inputs: text.substring(0, 3000), // Limit input length for free tier
-                parameters: {
-                    max_length: maxLength,
-                    min_length: 50,
-                    do_sample: false
-                }
-            },
-            {
-                headers: { Authorization: `Bearer ${HF_API_KEY}` },
-                timeout: 20000 // 20s timeout
-            }
-        );
+        const prompt = `
+      Summarize the following news article text into a concise, engaging summary of about 2-3 sentences (maximum ${maxLength} characters). 
+      Focus on the key facts, who is involved, and why it matters. 
+      Do not include meta-commentary like "Here is a summary" or "This article discusses".
+      
+      Article Text:
+      ${text.substring(0, 10000)}
+    `;
 
-        if (response.data && response.data[0] && response.data[0].summary_text) {
-            return response.data[0].summary_text;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const summary = response.text().trim();
+
+        if (summary) {
+            return summary;
         }
 
-        // Fallback if structure is unexpected
         return fallbackSummarize(text);
 
     } catch (err) {
-        console.error('Summarization API failed:', err.message);
-        if (err.response) {
-            console.error('Details:', err.response.data);
-        }
+        console.error('Gemini Summarization failed:', err.message);
         return fallbackSummarize(text);
     }
 }

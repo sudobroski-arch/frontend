@@ -5,7 +5,7 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
 ## Features
 
 - **Automated Aggregation**: Fetches news from CNN, BBC, Reuters, etc. every hour.
-- **AI Summarization**: Uses Hugging Face Inference API (`facebook/bart-large-cnn`) to generate unique summaries.
+- **AI Summarization**: Uses Google Gemini 1.5 Flash to generate unique summaries.
 - **Clustering**: Deduplicates similar stories from different sources.
 - **SEO Optimized**: Next.js SSR, sitemap, robots.txt, and metadata.
 - **Region & Category Targeting**: Dedicated sections for US/EU and Politics/Tech/Science.
@@ -16,13 +16,13 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
 - **Frontend**: Next.js 16 (App Router), Tailwind CSS
 - **Backend**: Node.js, Express, `rss-parser`, `node-cron`
 - **Database**: PostgreSQL (Supabase Free Tier)
-- **AI**: Hugging Face Inference API
+- **AI**: Google Gemini 1.5 Flash (via `@google/generative-ai`)
 
 ## Prerequisites
 
 - Node.js 18+
 - PostgreSQL Database (e.g., Supabase)
-- Hugging Face API Key (Free)
+- Google Gemini API Key (Free Tier)
 
 ## Setup
 
@@ -37,7 +37,7 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
     cd backend
     npm install
     cp .env.example .env
-    # In .env, replace [YOUR-PASSWORD] in DATABASE_URL, then set HF_API_KEY
+    # In .env, replace [YOUR-PASSWORD] in DATABASE_URL, then set GEMINI_API_KEY
     ```
     Supabase project: `https://enanwtcwvikrmmxlqauh.supabase.co`
     Direct DB string format:
@@ -77,7 +77,7 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
 1.  Deploy the `backend` folder as a Web Service.
 2.  Set Environment Variables:
     - `DATABASE_URL`
-    - `HF_API_KEY`
+    - `GEMINI_API_KEY`
     - `NODE_ENV=production`
     - `ALLOWED_ORIGINS=https://<your-netlify-site>.netlify.app`
 3.  Command: `npm run start`.
