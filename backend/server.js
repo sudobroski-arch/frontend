@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
+const NodeCache = require('node-cache');
 const db = require('./db');
 const {
     port,
@@ -10,11 +12,13 @@ const {
 } = require('./env');
 
 const app = express();
+const apiCache = new NodeCache({ stdTTL: 60, checkperiod: 120 });
 let server;
 const requestLog = new Map();
 
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
+app.use(compression());
 
 app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -107,12 +111,19 @@ app.get('/readyz', async (req, res) => {
 app.get('/articles', async (req, res) => {
     const limit = parseLimit(req.query.limit);
     const offset = parseOffset(req.query.offset);
+    const cacheKey = `articles_${limit}_${offset}`;
+
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30');
+
+    const cached = apiCache.get(cacheKey);
+    if (cached) return res.json(cached);
 
     try {
         const { rows } = await db.query(
             'SELECT * FROM articles ORDER BY published_at DESC LIMIT $1 OFFSET $2',
             [limit, offset]
         );
+        apiCache.set(cacheKey, rows);
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -138,16 +149,23 @@ app.get('/category/:category', async (req, res) => {
     const category = String(req.params.category || '').toLowerCase();
     const limit = parseLimit(req.query.limit);
     const offset = parseOffset(req.query.offset);
+    const cacheKey = `category_${category}_${limit}_${offset}`;
+
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30');
 
     if (!category) {
         return res.status(400).json({ error: 'Category is required' });
     }
+
+    const cached = apiCache.get(cacheKey);
+    if (cached) return res.json(cached);
 
     try {
         const { rows } = await db.query(
             'SELECT * FROM articles WHERE category = $1 ORDER BY published_at DESC LIMIT $2 OFFSET $3',
             [category, limit, offset]
         );
+        apiCache.set(cacheKey, rows);
         res.json(rows);
     } catch (err) {
         console.error(err);
@@ -160,16 +178,23 @@ app.get('/region/:region', async (req, res) => {
     const region = String(req.params.region || '').toLowerCase();
     const limit = parseLimit(req.query.limit);
     const offset = parseOffset(req.query.offset);
+    const cacheKey = `region_${region}_${limit}_${offset}`;
+
+    res.setHeader('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=30');
 
     if (!region) {
         return res.status(400).json({ error: 'Region is required' });
     }
+
+    const cached = apiCache.get(cacheKey);
+    if (cached) return res.json(cached);
 
     try {
         const { rows } = await db.query(
             'SELECT * FROM articles WHERE region = $1 ORDER BY published_at DESC LIMIT $2 OFFSET $3',
             [region, limit, offset]
         );
+        apiCache.set(cacheKey, rows);
         res.json(rows);
     } catch (err) {
         console.error(err);

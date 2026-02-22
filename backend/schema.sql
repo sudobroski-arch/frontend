@@ -11,4 +11,5 @@ CREATE TABLE IF NOT EXISTS articles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_published_at ON articles(published_at DESC);
-CREATE INDEX IF NOT EXISTS idx_category_region ON articles(category, region);
+CREATE INDEX IF NOT EXISTS idx_category_published ON articles(category, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_region_published ON articles(region, published_at DESC);
