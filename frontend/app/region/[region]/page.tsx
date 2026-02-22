@@ -1,38 +1,36 @@
 import { Article } from '@/types';
 import ArticleCard from '@/components/ArticleCard';
-import axios from 'axios';
-import { notFound } from 'next/navigation';
+import { fetchApi } from '@/lib/api';
 
 interface PageProps {
-    params: { region: string };
+    params: Promise<{ region: string }>;
 }
 
 async function getArticlesByRegion(region: string) {
     try {
-        const res = await axios.get(`http://localhost:4000/region/${region}`);
-        return res.data as Article[];
+        return await fetchApi<Article[]>(`/region/${region}`, {
+            revalidateSeconds: 300
+        });
     } catch (error) {
         return [];
     }
 }
 
 export async function generateMetadata({ params }: PageProps) {
+    const { region } = await params;
     return {
-        title: `${params.region.toUpperCase()} News | NewsAI`,
+        title: `${region.toUpperCase()} News | Momentumz`,
     };
 }
 
 export default async function RegionPage({ params }: PageProps) {
-    const articles = await getArticlesByRegion(params.region);
-
-    if (!articles) {
-        notFound();
-    }
+    const { region } = await params;
+    const articles = await getArticlesByRegion(region);
 
     return (
         <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-8 uppercase border-b border-gray-200 pb-4">
-                {params.region} News
+                {region} News
             </h1>
 
             {articles.length > 0 ? (

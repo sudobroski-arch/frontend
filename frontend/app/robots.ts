@@ -1,12 +1,15 @@
 import { MetadataRoute } from 'next';
+import { getSiteUrl } from '@/lib/api';
 
 export default function robots(): MetadataRoute.Robots {
+    const siteUrl = getSiteUrl();
     return {
         rules: {
             userAgent: '*',
             allow: '/',
-            disallow: '/private/',
+            disallow: ['/api/', '/private/'],
         },
-        sitemap: 'https://example.com/sitemap.xml',
+        sitemap: `${siteUrl}/sitemap.xml`,
+        host: siteUrl
     };
 }

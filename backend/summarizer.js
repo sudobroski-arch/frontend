@@ -1,5 +1,5 @@
 const axios = require('axios');
-require('dotenv').config();
+require('./env');
 
 const HF_API_KEY = process.env.HF_API_KEY;
 const HF_MODEL = 'facebook/bart-large-cnn';

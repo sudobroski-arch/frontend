@@ -3,11 +3,17 @@ const clusterArticles = require('./cluster');
 const summarize = require('./summarizer');
 const db = require('./db');
 const cron = require('node-cron');
-require('dotenv').config();
+require('./env');
 
 async function run() {
     console.log('Fetching news...');
     try {
+        const connected = await db.ensureConnection(3, 2000);
+        if (!connected) {
+            console.error('Skipping cycle: database is unavailable.');
+            return;
+        }
+
         const articles = await fetchAll();
         console.log(`Fetched ${articles.length} raw articles`);
 
@@ -21,42 +27,58 @@ async function run() {
 
         for (let cluster of clusters) {
             try {
+                if (!Array.isArray(cluster) || cluster.length === 0) {
+                    console.log('Skipping empty cluster');
+                    continue;
+                }
+
                 // Check if cluster already exists in DB (check by source URLs)
                 // We use ANY operator for array check
-                const links = cluster.map(a => a.link);
+                const links = cluster
+                    .map((article) => (typeof article.link === 'string' ? article.link.trim() : ''))
+                    .filter(Boolean);
+
+                if (links.length === 0) {
+                    console.log('Skipping cluster with no valid source links');
+                    continue;
+                }
+
                 const { rows } = await db.query(
-                    'SELECT id FROM articles WHERE source_urls && $1',
+                    'SELECT id FROM articles WHERE source_urls && $1::text[]',
                     [links]
                 );
 
                 if (rows.length > 0) {
-                    console.log(`Skipping duplicate cluster (First title: ${cluster[0].title})`);
+                    console.log(`Skipping duplicate cluster (First title: ${cluster[0]?.title || 'untitled'})`);
                     continue;
                 }
 
                 // Combine content logic
                 // We take the longest content or just concatenate a few?
                 // Let's just take the longest one to summarize, to avoid noise.
-                const longestArticle = cluster.reduce((prev, current) =>
-                    (prev.content.length > current.content.length) ? prev : current
-                );
+                const longestArticle = cluster.reduce((prev, current) => {
+                    const previousLength = typeof prev?.content === 'string' ? prev.content.length : 0;
+                    const currentLength = typeof current?.content === 'string' ? current.content.length : 0;
+                    return previousLength > currentLength ? prev : current;
+                }, cluster[0]);
 
-                console.log(`Summarizing cluster: ${cluster[0].title}`);
-                const summary = await summarize(longestArticle.content, 250);
+                const representativeTitle = cluster[0]?.title || 'Untitled';
+                console.log(`Summarizing cluster: ${representativeTitle}`);
+                const summary = await summarize(longestArticle?.content || representativeTitle, 250);
 
                 // Generate title - ideally use AI, for now use the representative title
-                const title = cluster[0].title;
+                const title = representativeTitle;
 
                 // Determine category/region (majority vote)
                 const categories = cluster.map(a => a.category);
                 const category = categories.sort((a, b) =>
                     categories.filter(v => v === a).length - categories.filter(v => v === b).length
-                ).pop();
+                ).pop() || 'general';
 
                 const regions = cluster.map(a => a.region);
                 const region = regions.sort((a, b) =>
                     regions.filter(v => v === a).length - regions.filter(v => v === b).length
-                ).pop();
+                ).pop() || 'global';
 
                 await db.query(
                     `INSERT INTO articles (title, summary, source_urls, source_names, category, region, published_at)
@@ -64,8 +86,8 @@ async function run() {
                     [
                         title,
                         summary,
-                        cluster.map(a => a.link),
-                        cluster.map(a => a.source),
+                        links,
+                        cluster.map(a => a.source || 'Unknown'),
                         category,
                         region,
                         new Date()

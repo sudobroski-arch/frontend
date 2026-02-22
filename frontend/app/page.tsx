@@ -1,14 +1,13 @@
 import Link from 'next/link';
 import { Article } from '@/types';
 import ArticleCard from '@/components/ArticleCard';
-import axios from 'axios';
+import { fetchApi } from '@/lib/api';
 
 async function getArticles() {
   try {
-    const res = await axios.get('http://localhost:4000/articles', {
-      timeout: 5000
+    return await fetchApi<Article[]>('/articles?limit=20', {
+      revalidateSeconds: 300
     });
-    return res.data as Article[];
   } catch (error) {
     console.error('Failed to fetch articles:', error);
     return [];
@@ -22,7 +21,7 @@ export default async function Home() {
     <div className="space-y-8">
       <section className="text-center py-12 bg-white rounded-2xl shadow-sm border border-gray-100">
         <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight lg:text-6xl">
-          Global News <span className="text-blue-600">Reimagined</span>
+          News with <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">Momentum</span>
         </h1>
         <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500">
           AI-curated summaries from trusted sources worldwide.
@@ -54,5 +53,4 @@ export default async function Home() {
   );
 }
 
-// Revalidate every hour
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';

@@ -1,24 +1,26 @@
 import { Article } from '@/types';
-import axios from 'axios';
 import { notFound } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { Metadata } from 'next';
+import { fetchApi } from '@/lib/api';
 
 interface PageProps {
-    params: { id: string };
+    params: Promise<{ id: string }>;
 }
 
 async function getArticle(id: string) {
     try {
-        const res = await axios.get(`http://localhost:4000/articles/${id}`);
-        return res.data as Article;
+        return await fetchApi<Article>(`/articles/${id}`, {
+            revalidateSeconds: 300
+        });
     } catch (error) {
         return null;
     }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const article = await getArticle(params.id);
+    const { id } = await params;
+    const article = await getArticle(id);
 
     if (!article) {
         return {
@@ -27,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
 
     return {
-        title: `${article.title} | NewsAI`,
+        title: `${article.title} | Momentumz`,
         description: article.summary.substring(0, 160),
         openGraph: {
             title: article.title,
@@ -41,7 +43,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ArticlePage({ params }: PageProps) {
-    const article = await getArticle(params.id);
+    const { id } = await params;
+    const article = await getArticle(id);
 
     if (!article) {
         notFound();

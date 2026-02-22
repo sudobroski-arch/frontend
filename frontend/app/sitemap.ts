@@ -1,9 +1,11 @@
 import { MetadataRoute } from 'next';
-import axios from 'axios';
 import { Article } from '@/types';
+import { fetchApi, getSiteUrl } from '@/lib/api';
+
+export const dynamic = 'force-dynamic';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-    const baseUrl = 'https://example.com'; // Replace with actual domain
+    const baseUrl = getSiteUrl();
 
     // Static routes
     const routes = [
@@ -23,8 +25,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Dynamic article routes
     let articles: Article[] = [];
     try {
-        const res = await axios.get('http://localhost:4000/articles?limit=100');
-        articles = res.data;
+        articles = await fetchApi<Article[]>('/articles?limit=100', {
+            revalidateSeconds: 3600
+        });
     } catch (error) {
         console.error('Failed to fetch articles for sitemap');
     }

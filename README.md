@@ -1,4 +1,4 @@
-# AI News Aggregator
+# Momentumz — AI News Aggregator
 
 A complete news blog website that aggregates, summarizes, and rewrites articles from trusted sources using AI. Built with Node.js, Next.js, and free tier cloud services.
 
@@ -13,7 +13,7 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), Tailwind CSS
+- **Frontend**: Next.js 16 (App Router), Tailwind CSS
 - **Backend**: Node.js, Express, `rss-parser`, `node-cron`
 - **Database**: PostgreSQL (Supabase Free Tier)
 - **AI**: Hugging Face Inference API
@@ -37,17 +37,22 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
     cd backend
     npm install
     cp .env.example .env
-    # Edit .env with your DATABASE_URL and HF_API_KEY
+    # In .env, replace [YOUR-PASSWORD] in DATABASE_URL, then set HF_API_KEY
     ```
+    Supabase project: `https://enanwtcwvikrmmxlqauh.supabase.co`
+    Direct DB string format:
+    `postgresql://postgres:[YOUR-PASSWORD]@db.enanwtcwvikrmmxlqauh.supabase.co:5432/postgres`
+    If your DB password includes `#`, encode it as `%23` in the URL.
 
 3.  **Database Migration:**
-    Run the SQL commands in `backend/schema.sql` in your PostgreSQL database query editor.
+    Run `backend/schema.sql` in the Supabase SQL Editor for this project.
 
 4.  **Frontend Setup:**
     ```bash
     cd ../frontend
     npm install
-    # Update API URL in fetch calls if deploying to production
+    cp .env.example .env.local
+    # Set NEXT_PUBLIC_SITE_URL and API_BASE_URL in .env.local
     ```
 
 ## Running Locally
@@ -55,8 +60,8 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
 1.  **Start Backend:**
     ```bash
     cd backend
-    node index.js --run-now # To fetch news immediately
-    node server.js          # To start the API server
+    npm run fetch-now # To fetch news immediately
+    npm run start     # To start the API server
     ```
 
 2.  **Start Frontend:**
@@ -70,14 +75,35 @@ A complete news blog website that aggregates, summarizes, and rewrites articles 
 
 ### Backend (Render/Fly.io)
 1.  Deploy the `backend` folder as a Web Service.
-2.  Set Environment Variables: `DATABASE_URL`, `HF_API_KEY`.
-3.  Command: `node server.js`.
+2.  Set Environment Variables:
+    - `DATABASE_URL`
+    - `HF_API_KEY`
+    - `NODE_ENV=production`
+    - `ALLOWED_ORIGINS=https://<your-netlify-site>.netlify.app`
+3.  Command: `npm run start`.
 4.  **Cron Job**: Use GitHub Actions (provided in `.github/workflows`) or a separate cron service to call an endpoint or run the script periodically.
 
-### Frontend (Vercel)
-1.  Import the repository to Vercel.
+### Frontend (Netlify)
+1.  Import the repository to Netlify.
 2.  Set Root Directory to `frontend`.
-3.  Deploy.
+3.  Build command: `npm run build`.
+4.  Publish directory: leave empty (Netlify Next.js plugin handles output via `netlify.toml`).
+5.  Set environment variables:
+    - `NEXT_PUBLIC_SITE_URL=https://<your-netlify-site>.netlify.app`
+    - `API_BASE_URL=https://<your-backend-domain>`
+    - `NEXT_PUBLIC_API_BASE_URL=https://<your-backend-domain>` (optional fallback)
+6.  Deploy.
+
+## Production Readiness Notes
+
+- API endpoints use configurable base URLs instead of hardcoded localhost.
+- Frontend sitemap/robots/metadata now use your production site URL.
+- Backend includes:
+  - readiness and health endpoints (`/readyz`, `/healthz`)
+  - CORS allowlist via `ALLOWED_ORIGINS`
+  - basic rate limiting via `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS`
+  - secure response headers and graceful shutdown
+- Netlify deployment is configured in `netlify.toml`.
 
 ## Project Structure
 

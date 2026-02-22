@@ -1,38 +1,36 @@
 import { Article } from '@/types';
 import ArticleCard from '@/components/ArticleCard';
-import axios from 'axios';
-import { notFound } from 'next/navigation';
+import { fetchApi } from '@/lib/api';
 
 interface PageProps {
-    params: { category: string };
+    params: Promise<{ category: string }>;
 }
 
 async function getArticlesByCategory(category: string) {
     try {
-        const res = await axios.get(`http://localhost:4000/category/${category}`);
-        return res.data as Article[];
+        return await fetchApi<Article[]>(`/category/${category}`, {
+            revalidateSeconds: 300
+        });
     } catch (error) {
         return [];
     }
 }
 
 export async function generateMetadata({ params }: PageProps) {
+    const { category } = await params;
     return {
-        title: `${params.category.charAt(0).toUpperCase() + params.category.slice(1)} News | NewsAI`,
+        title: `${category.charAt(0).toUpperCase() + category.slice(1)} News | Momentumz`,
     };
 }
 
 export default async function CategoryPage({ params }: PageProps) {
-    const articles = await getArticlesByCategory(params.category);
-
-    if (!articles) {
-        notFound();
-    }
+    const { category } = await params;
+    const articles = await getArticlesByCategory(category);
 
     return (
         <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-8 capitalize border-b border-gray-200 pb-4">
-                {params.category} News
+                {category} News
             </h1>
 
             {articles.length > 0 ? (
